@@ -2,24 +2,23 @@ package com.sighs.oneenoughvalue.manager;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mojang.datafixers.util.Pair;
 import com.sighs.oneenoughvalue.kubejs.events.OEVEvents;
-import com.sighs.oneenoughvalue.kubejs.events.OEVInitValueEvents;
+import com.sighs.oneenoughvalue.kubejs.events.OEVInitRecipeHandleEventJS;
+import com.sighs.oneenoughvalue.kubejs.events.OEVInitValueEventJS;
 import com.sighs.oneenoughvalue.server.ServerRecipeHandler;
+import dev.latvian.mods.kubejs.typings.Info;
 import dev.latvian.mods.rhino.util.HideFromJS;
 import net.minecraft.advancements.critereon.NbtPredicate;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -29,12 +28,12 @@ import java.util.function.Predicate;
 
 public class ItemValueManager {
     public static ItemValueManager instance = new ItemValueManager();
-    public static Predicate<ItemStack> ANY = (stack) -> true;
     public Map<ResourceLocation, Integer> recipesGenValue = new HashMap<>();
     public Map<ResourceLocation, Integer> baseValueMap = new HashMap<>();
     public Map<NbtPredicate, Integer> extraValueMap = new HashMap<>();
 
     public void init() {
+        //todo 增加更多预设价值（可能？
         JsonObject defValue;
         {
             defValue = JsonParser.parseString("""
@@ -229,7 +228,9 @@ public class ItemValueManager {
                           "minecraft:wayfinder_armor_trim_smithing_template": 10176,
                           "minecraft:weeping_vines": 8,
                           "minecraft:wild_armor_trim_smithing_template": 42641,
-                          "minecraft:zombie_head": 256
+                          "minecraft:zombie_head": 256,
+                          "minecraft:gold_ingot": 648,
+                          "minecraft:copper_ingot":64
                           }
                     """).getAsJsonObject();
         }
@@ -245,7 +246,9 @@ public class ItemValueManager {
     public void onReload(RecipeManager recipeManager, RegistryAccess registryAccess) {
         baseValueMap.clear();
         init();
-        OEVEvents.ADD_VALUE.post(new OEVInitValueEvents(this));
+        OEVEvents.ADD_VALUE.post(new OEVInitValueEventJS(this));
+        ServerRecipeHandler.instance.init();
+        OEVEvents.ADD_RECIPE_HANDLER.post(new OEVInitRecipeHandleEventJS(ServerRecipeHandler.instance));
         ServerRecipeHandler.instance.parse(recipeManager, registryAccess);
         Map<ResourceLocation, Integer> result = new HashMap<>();
         result.putAll(recipesGenValue);
@@ -254,29 +257,41 @@ public class ItemValueManager {
         recipesGenValue.clear();
     }
 
-    public void computeRecipeValue(ItemStack stack, int value) {
-        recipesGenValue.compute(ForgeRegistries.ITEMS.getKey(stack.getItem()), (resourceLocation, integer) -> {
-            if (integer == null) {
-                return value / stack.getCount();
-            } else {
-                return Math.min(integer, value / stack.getCount());
-            }
-        });
+    //如果放入了新值则返回true,用于检测配方是否完全处理
+    public boolean computeRecipeValue(ItemStack stack, int value) {
+        ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        Integer oldValue = recipesGenValue.get(key);
+        if (oldValue == null) {
+            recipesGenValue.put(key, value);
+            return true;
+        }
+        if (value < oldValue) {
+            recipesGenValue.put(key, value);
+            return true;
+        }
+        return false;
     }
 
+    @Info("获取一个物品的价值（基础价值+额外价值）")
     public int getValue(ItemStack itemStack) {
         return getBaseValue(itemStack) + getExtraValue(itemStack);
     }
 
+    @HideFromJS//js别看这个，笨牛会找不到方法
     public int getBaseValue(ItemStack itemStack) {
-        ResourceLocation key = ForgeRegistries.ITEMS.getKey(itemStack.getItem());
-        var z = baseValueMap.get(key);
+        return getBaseValue(itemStack.getItem());
+    }
+
+    @Info("获取一个物品的基础价值")
+    public int getBaseValue(Item item) {
+        ResourceLocation key = ForgeRegistries.ITEMS.getKey(item);
         return baseValueMap.getOrDefault(key, -1);
     }
 
+    @Info("获取一个物品的额外价值")
     public int getExtraValue(ItemStack itemStack) {
         int value = 0;
-        for (Map.Entry< NbtPredicate, Integer> entry : extraValueMap.entrySet()) {
+        for (Map.Entry<NbtPredicate, Integer> entry : extraValueMap.entrySet()) {
             if (entry.getKey().matches(itemStack)) {
                 value += entry.getValue();
             }
@@ -299,15 +314,16 @@ public class ItemValueManager {
         }
     }
 
+    public void registerValue(Item item, Integer value) {
+        registerValue(ForgeRegistries.ITEMS.getKey(item), value);
+    }
+
     public void registerValue(TagKey<Item> tag, Integer value) {
         for (Holder<Item> holder : BuiltInRegistries.ITEM.getTagOrEmpty(tag)) {
             registerValue(holder.get(), value);
         }
     }
 
-    public void registerValue(Item item, Integer value) {
-        registerValue(ForgeRegistries.ITEMS.getKey(item), value);
-    }
 
     public void registerExtraValue(NbtPredicate nbtPredicate, Integer value) {
         extraValueMap.put(nbtPredicate, value);
@@ -319,12 +335,5 @@ public class ItemValueManager {
 
     public void registerExtraValue(ItemStack stack, Integer value) {
         registerExtraValue(stack.getTag(), value);
-    }
-
-    public void sendToClient(ServerPlayer player) {
-    }
-
-    public void saveFromServer() {
-
     }
 }
