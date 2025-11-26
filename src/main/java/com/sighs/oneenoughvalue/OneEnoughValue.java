@@ -1,5 +1,6 @@
 package com.sighs.oneenoughvalue;
 
+import com.mojang.logging.LogUtils;
 import com.sighs.oneenoughvalue.network.DataSyncPack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -10,12 +11,13 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
+import org.slf4j.Logger;
 
 @SuppressWarnings("removal")
 @Mod(OneEnoughValue.MODID)
 public class OneEnoughValue {
-
     public static final String MODID = "oneenoughvalue";
+    public static final Logger LOGGER = LogUtils.getLogger();
     public static final SimpleChannel NETWORK = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MODID,"main"),
             ()->"1.0.0",

@@ -3,7 +3,6 @@ package com.sighs.oneenoughvalue.client;
 import com.sighs.oneenoughvalue.OneEnoughValue;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -16,6 +15,6 @@ public class ValueTooltipHandler {
         if (!event.getFlags().isAdvanced()) return;
         int itemValue = ItemValueManager.instance.getValue(event.getItemStack());
         if (itemValue <= 0) return;
-        event.getToolTip().add(Component.literal("该物品价值:"+itemValue+"$"));
+        event.getToolTip().add(Component.translatable("tooltip.oev.value",itemValue));
     }
 }

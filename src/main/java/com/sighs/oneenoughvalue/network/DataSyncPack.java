@@ -1,6 +1,7 @@
 package com.sighs.oneenoughvalue.network;
 
 import com.google.gson.JsonParser;
+import com.sighs.oneenoughvalue.OneEnoughValue;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
 import net.minecraft.advancements.critereon.NbtPredicate;
 import net.minecraft.network.FriendlyByteBuf;
@@ -44,6 +45,9 @@ public class DataSyncPack {
     }
 
     public void handle(Supplier<NetworkEvent.Context> contextSupplier) {
+        OneEnoughValue.LOGGER.debug("从服务器接收");
+        OneEnoughValue.LOGGER.debug("├基础价值列表: {}",baseValueMap.size());
+        OneEnoughValue.LOGGER.debug("└额外价值列表: {}",extraValueMap.size());
         if (ServerLifecycleHooks.getCurrentServer() == null) {
             ItemValueManager.instance.baseValueMap = baseValueMap;
             ItemValueManager.instance.extraValueMap = extraValueMap;
