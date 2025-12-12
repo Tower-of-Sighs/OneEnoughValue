@@ -18,13 +18,11 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Predicate;
 
 public class ItemValueManager {
     public static ItemValueManager instance = new ItemValueManager();
@@ -247,9 +245,12 @@ public class ItemValueManager {
         baseValueMap.clear();
         init();
         OEVEvents.ADD_VALUE.post(new OEVInitValueEventJS(this));
+
         ServerRecipeHandler.instance.init();
-        OEVEvents.ADD_RECIPE_HANDLER.post(new OEVInitRecipeHandleEventJS(ServerRecipeHandler.instance));
+        OEVInitRecipeHandleEventJS.modifiers.clear();
+        OEVEvents.ADD_RECIPE_HANDLER.post(new OEVInitRecipeHandleEventJS<>(ServerRecipeHandler.instance));
         ServerRecipeHandler.instance.parse(recipeManager, registryAccess);
+
         Map<ResourceLocation, Integer> result = new HashMap<>();
         result.putAll(recipesGenValue);
         result.putAll(baseValueMap);
@@ -258,8 +259,11 @@ public class ItemValueManager {
     }
 
     //如果放入了新值则返回true,用于检测配方是否完全处理
-    public boolean computeRecipeValue(ItemStack stack, int value) {
+    public boolean computeRecipeValue(String type, ItemStack stack, int value) {
         ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        for (OEVInitRecipeHandleEventJS.IRecipeModify modifier : OEVInitRecipeHandleEventJS.modifiers) {
+            value = modifier.apply(type,value);
+        }
         Integer oldValue = recipesGenValue.get(key);
         if (oldValue == null) {
             recipesGenValue.put(key, value);

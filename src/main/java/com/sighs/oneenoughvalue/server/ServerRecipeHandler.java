@@ -5,7 +5,6 @@ import dev.latvian.mods.kubejs.typings.Info;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeManager;
@@ -14,6 +13,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 public class ServerRecipeHandler {
@@ -24,13 +24,19 @@ public class ServerRecipeHandler {
     public ServerRecipeHandler() {
     }
 
+    //默认的设置配方价值的函数
+    public static BiPredicate<Recipe<?>,Integer> defSetValue = (recipe, value) -> {
+        ItemStack result = recipe.getResultItem(currentRegistryAccess);
+        if (result.isEmpty()) return true;
+        if (ItemValueManager.instance.baseValueMap.containsKey(ForgeRegistries.ITEMS.getKey(result.getItem())))
+            return true;
+        return !ItemValueManager.instance.computeRecipeValue(ForgeRegistries.RECIPE_TYPES.getKey(recipe.getType()).toString(), result, value / result.getCount());
+    };
+
     //返回是否完全处理（即未生成新的价值
     public static Predicate<Recipe<?>> defHandler = (recipe) -> {
         int value = 0;
 
-        if (recipe.getResultItem(currentRegistryAccess).is(Items.NETHERITE_INGOT)) {
-            var z = 1;
-        }
         for (Ingredient ingredient : recipe.getIngredients()) {
             int ingredientMinValue = getMinIngredientValue(ingredient);
             if (ingredientMinValue == Integer.MAX_VALUE) {
@@ -40,11 +46,7 @@ public class ServerRecipeHandler {
             }
             value += ingredientMinValue;
         }
-        ItemStack result = recipe.getResultItem(currentRegistryAccess);
-        if (result.isEmpty()) return true;
-        if (ItemValueManager.instance.baseValueMap.containsKey(ForgeRegistries.ITEMS.getKey(result.getItem())))
-            return true;
-        return !ItemValueManager.instance.computeRecipeValue(result, value / result.getCount());
+        return defSetValue.test(recipe,value);
     };
 
     public void init() {
@@ -60,7 +62,7 @@ public class ServerRecipeHandler {
 
     public static int getMinIngredientValue(Ingredient ingredient) {
         ItemStack[] stacks = ingredient.getItems();
-        if(stacks.length == 0) return Integer.MAX_VALUE;
+        if (stacks.length == 0) return Integer.MAX_VALUE;
         int ingredientMinValue = Integer.MAX_VALUE;
         for (ItemStack item : stacks) {
 

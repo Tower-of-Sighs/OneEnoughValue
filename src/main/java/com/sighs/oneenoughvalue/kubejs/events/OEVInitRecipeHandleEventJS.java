@@ -11,21 +11,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-public class OEVInitRecipeHandleEventJS extends EventJS {
+public class OEVInitRecipeHandleEventJS<C extends Container, T extends Recipe<C>> extends EventJS {
     public ServerRecipeHandler recipeHandler;
+    public static List<IRecipeModify> modifiers = new ArrayList<>();
 
     public OEVInitRecipeHandleEventJS(ServerRecipeHandler recipeHandler) {
         this.recipeHandler = recipeHandler;
     }
 
     @Info("添加默认的配方处理方式，即输出物品价值等于输入物品价值总和")
-    public <C extends Container, T extends Recipe<C>> void addSimpleRecipeHandler(RecipeType<T> recipeType) {
+    public  void addSimpleRecipeHandler(RecipeType<T> recipeType) {
         recipeHandler.registerSimpleRecipeHandler(recipeType);
     }
 
-    @Info("添加自定义的配方处理方法，返回true表示当然配方处理完全")
-    public <C extends Container, T extends Recipe<C>> void addCustomRecipeHandler(RecipeType<T> recipeType, Predicate<T> handler) {
+    @Info("添加自定义的配方处理方法，返回true表示当前配方处理完全")
+    public void addCustomRecipeHandler(RecipeType<T> recipeType, Predicate<T> handler) {
         recipeHandler.registerRecipeHandler(recipeType, handler);
+    }
+
+    public  void modifyRecipeGenValue(IRecipeModify modifier) {
+        modifiers.add(modifier);
     }
 
     @Info("移除指定配方处理器")
@@ -40,5 +45,10 @@ public class OEVInitRecipeHandleEventJS extends EventJS {
 
     public ServerRecipeHandler getRecipeHandler() {
         return recipeHandler;
+    }
+
+    @FunctionalInterface
+    public interface IRecipeModify{
+        int apply(String type, int oldValue);
     }
 }

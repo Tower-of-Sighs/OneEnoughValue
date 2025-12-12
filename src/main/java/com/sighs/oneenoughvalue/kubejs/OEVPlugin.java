@@ -15,4 +15,16 @@ public class OEVPlugin extends KubeJSPlugin {
     public void registerBindings(BindingsEvent event) {
         event.add("OEV$ItemValueManager", ItemValueManager.instance);
     }
+/*
+    todo:等哪天写了pjs兼容再使用
+    @Override
+    public void registerTypeWrappers(ScriptType type, TypeWrappers typeWrappers) {
+        typeWrappers.registerSimple(RecipeType.class,o -> {
+            if(o instanceof RecipeType){
+                return (RecipeType) o;
+            }
+            return ForgeRegistries.RECIPE_TYPES.getValue(new ResourceLocation(o.toString()));
+        });
+    }
+ */
 }
