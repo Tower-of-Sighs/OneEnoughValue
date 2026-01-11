@@ -4,9 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.sighs.oneenoughvalue.network.DataSyncPack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
@@ -28,7 +26,7 @@ public class OneEnoughValue {
     public OneEnoughValue() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.register(this);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        //ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         NETWORK.messageBuilder(DataSyncPack.class,0, NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(DataSyncPack::fromBuffer)
                 .encoder(DataSyncPack::toBuffer)

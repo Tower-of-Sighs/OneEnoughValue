@@ -4,8 +4,10 @@ import com.sighs.oneenoughvalue.server.ServerRecipeHandler;
 import dev.latvian.mods.kubejs.event.EventJS;
 import dev.latvian.mods.kubejs.typings.Info;
 import net.minecraft.world.Container;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +43,26 @@ public class OEVInitRecipeHandleEventJS<C extends Container, T extends Recipe<C>
     @Info("获取全部配方处理器")
     public List<ServerRecipeHandler.RecipeHandler<?, ?>> getRecipeHandlers() {
         return recipeHandler.recipeHandlers;
+    }
+
+    public boolean defaultSetRecipeValue(Recipe<?> recipe, Number value) {
+        return ServerRecipeHandler.defSetValue.test(recipe, value);
+    }
+
+    public int getMinIngredientValue(Ingredient ingredient) {
+        return ServerRecipeHandler.getMinIngredientValue(ingredient);
+    }
+
+    public List<String> getAllRecipeTypeName(){
+        return ForgeRegistries.RECIPE_TYPES.getKeys().stream().map(Object::toString).toList();
+    }
+
+    public List<RecipeType<?>> getAllRecipeType(){
+        return ForgeRegistries.RECIPE_TYPES.getValues().stream().toList();
+    }
+
+    public int getMaxInteger(){
+        return Integer.MAX_VALUE;
     }
 
     public ServerRecipeHandler getRecipeHandler() {

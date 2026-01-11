@@ -25,12 +25,12 @@ public class ServerRecipeHandler {
     }
 
     //默认的设置配方价值的函数
-    public static BiPredicate<Recipe<?>,Integer> defSetValue = (recipe, value) -> {
+    public static BiPredicate<Recipe<?>,Number> defSetValue = (recipe, value) -> {
         ItemStack result = recipe.getResultItem(currentRegistryAccess);
         if (result.isEmpty()) return true;
         if (ItemValueManager.instance.baseValueMap.containsKey(ForgeRegistries.ITEMS.getKey(result.getItem())))
             return true;
-        return !ItemValueManager.instance.computeRecipeValue(ForgeRegistries.RECIPE_TYPES.getKey(recipe.getType()).toString(), result, value / result.getCount());
+        return !ItemValueManager.instance.computeRecipeValue(ForgeRegistries.RECIPE_TYPES.getKey(recipe.getType()).toString(), result, value.intValue() / result.getCount());
     };
 
     //返回是否完全处理（即未生成新的价值
@@ -50,6 +50,7 @@ public class ServerRecipeHandler {
     };
 
     public void init() {
+        recipeHandlers.clear();
         registerSimpleRecipeHandler(RecipeType.CRAFTING);
         registerSimpleRecipeHandler(RecipeType.SMELTING);
         registerSimpleRecipeHandler(RecipeType.BLASTING);
@@ -82,6 +83,7 @@ public class ServerRecipeHandler {
     }
 
     public void registerRecipeHandler(RecipeHandler<?, ?> recipeHandler) {
+        recipeHandlers.removeIf(recipeHandler1 -> recipeHandler1.type==recipeHandler.type);
         recipeHandlers.add(recipeHandler);
     }
 
