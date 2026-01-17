@@ -55,25 +55,35 @@ OEVEvents.addRecipeHandler(event => {
 以下是一个简单的模板，可以让合成得到的产物价值是原料价值之和的十倍。
 ```javascript
 let $RecipeType = Java.loadClass("net.minecraft.world.item.crafting.RecipeType");
+
 OEVEvents.addRecipeHandler(event => {
-    // 添加自定义配方加工价值处理器，遍历所有配方。
-    event.addCustomRecipeHandler($RecipeType.CRAFTING, recipe => {
-        let value = 0;
-        // 遍历配方中的各项原料。
-        for (let ingredient of recipe.getIngredients()) {
-            // 获取单个原料的最小价值，如对于标签匹配的原料，如煤炭128，木炭32，制作火把时取32.
-            let ingredientMinValue = event.getMinIngredientValue(ingredient);
-            // 处理原料为空和原料包含物品没有对应价值的情况，照抄即可。
-            if (ingredientMinValue === event.getMaxInteger()) continue;
-            else if (ingredientMinValue === -1) return true;
-            value += ingredientMinValue;
-        }
-        value *= 10;
-        // 设置单条配方的最终价值价值。
-        return event.defaultSetRecipeValue(recipe, value);
-    });
+    // 第一个参数为RecipeType，你可以使用字符串来代表
+    // 也可以去loadClass获取RecipeType实例
     // 辅助方法，输出一个数组，包含所有已注册的配方类型。
     console.log(event.getAllRecipeType());
+    
+    event.addCustomRecipeHandler("crafting",
+        // 获取输入物品，正常你应该不需要改
+        event.defaultRecipeInputGetter,
+        // 设置输出物品，多物品输出你可能需要重写这部分
+        event.defaultRecipeOutputGetter,
+        // 设置配方的额外价值，例如熔炉燃烧时间提供额外价值
+        event.defaultRecipeExtraValueGetter,
+        // 配方价值设置，单输出情况下你不需要管
+        // 多物品输入你需要自行分配每个输出物品的价值，不然会只给第一个物品设置
+        event.defaultRecipeValueSetter
+    )
+    
+    event.addCustomRecipeHandler($RecipeType.CRAFTING,
+        event.defaultRecipeInputGetter,
+        event.defaultRecipeOutputGetter,
+        event.defaultRecipeExtraValueGetter,
+        (recipe, stacks, totalValue, setter) => {
+            // 配方十倍价值
+            setter.set(recipe, stacks.get(0), totalValue * 10);
+        }
+    )
+
 });
 ```
 

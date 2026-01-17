@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class OEVInitRecipeHandleEventJS<C extends Container, T extends Recipe<C>> extends EventJS {
     public static List<IRecipeModify> modifiers = new ArrayList<>();
@@ -134,7 +135,8 @@ public class OEVInitRecipeHandleEventJS<C extends Container, T extends Recipe<C>
         List<Ingredient> kjs$get(Recipe<?> recipe);
 
         default List<Ingredient> get(Recipe<?> recipe) {
-            return kjs$get(recipe).stream().map(IngredientJS::of).toList();
+            //直接toList会输入kjs不可用的list
+            return kjs$get(recipe).stream().map(IngredientJS::of).collect(Collectors.toList());
         }
     }
 
@@ -143,7 +145,7 @@ public class OEVInitRecipeHandleEventJS<C extends Container, T extends Recipe<C>
         List<ItemStack> kjs$get(Recipe<?> recipe, RegistryAccess registryAccess);
 
         default List<ItemStack> get(Recipe<?> recipe, RegistryAccess registryAccess) {
-            return kjs$get(recipe, registryAccess).stream().map(ItemStackJS::of).toList();
+            return kjs$get(recipe, registryAccess).stream().map(ItemStackJS::of).collect(Collectors.toList());
         }
     }
 
