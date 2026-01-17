@@ -5,7 +5,7 @@ import com.google.gson.JsonParser;
 import com.sighs.oneenoughvalue.kubejs.events.OEVEvents;
 import com.sighs.oneenoughvalue.kubejs.events.OEVInitRecipeHandleEventJS;
 import com.sighs.oneenoughvalue.kubejs.events.OEVInitValueEventJS;
-import com.sighs.oneenoughvalue.server.ServerRecipeHandler;
+import com.sighs.oneenoughvalue.server.recipe.RecipeHandlerManager;
 import dev.latvian.mods.kubejs.typings.Info;
 import dev.latvian.mods.rhino.util.HideFromJS;
 import net.minecraft.advancements.critereon.NbtPredicate;
@@ -246,12 +246,13 @@ public class ItemValueManager {
         init();
         OEVEvents.ADD_VALUE.post(new OEVInitValueEventJS(this));
 
-        ServerRecipeHandler.instance.init();
         OEVInitRecipeHandleEventJS.modifiers.clear();
-        OEVEvents.ADD_RECIPE_HANDLER.post(new OEVInitRecipeHandleEventJS<>(ServerRecipeHandler.instance));
-        ServerRecipeHandler.instance.parse(recipeManager, registryAccess);
+        RecipeHandlerManager.INSTANCE.parseAllRecipes(recipeManager, registryAccess);
 
         Map<ResourceLocation, Integer> result = new HashMap<>();
+        /*
+        先放人配方生成价值，再加入基础价值，保证基础价值优先级高于配方生成
+         */
         result.putAll(recipesGenValue);
         result.putAll(baseValueMap);
         baseValueMap = result;
@@ -261,12 +262,17 @@ public class ItemValueManager {
     //如果放入了新值则返回true,用于检测配方是否完全处理
     public boolean computeRecipeValue(String type, ItemStack stack, int value) {
         ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        value/=stack.getCount();
         for (OEVInitRecipeHandleEventJS.IRecipeModify modifier : OEVInitRecipeHandleEventJS.modifiers) {
-            value = modifier.apply(type,value);
+            value = modifier.apply(type, value);
         }
         Integer oldValue = recipesGenValue.get(key);
         if (oldValue == null) {
             recipesGenValue.put(key, value);
+            return true;
+        }
+        if (value < 0) {
+            recipesGenValue.put(key, 0);
             return true;
         }
         if (value < oldValue) {

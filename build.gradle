@@ -128,6 +128,8 @@ dependencies {
     modImplementation("curse.maven:rhino-416294:6186971")
     //2001.6.5-build.16
     modImplementation("curse.maven:kubejs-238086:5853326")
+    //1.20.1-6.0.0: Simplicity
+    modRuntimeOnly("curse.maven:probejs-legacy-956446:7411696")
 }
 
 // Uncomment the lines below if you wish to configure mixin. The mixin file should be named modid.mixins.json.
@@ -200,3 +202,6 @@ idea {
         downloadJavadoc = true
     }
 }
+
+compileJava.options.compilerArgs.add '-parameters'
+compileTestJava.options.compilerArgs.add '-parameters'

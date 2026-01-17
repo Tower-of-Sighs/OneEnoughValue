@@ -1,9 +1,16 @@
 package com.sighs.oneenoughvalue.kubejs.events;
 
-import com.sighs.oneenoughvalue.server.ServerRecipeHandler;
+import com.sighs.oneenoughvalue.server.ingredient.IngredientManager;
+import com.sighs.oneenoughvalue.server.ingredient.api.ISpecialIngredientValueHandler;
+import com.sighs.oneenoughvalue.server.recipe.RecipeHandlerManager;
+import com.sighs.oneenoughvalue.server.recipe.api.*;
 import dev.latvian.mods.kubejs.event.EventJS;
+import dev.latvian.mods.kubejs.item.ItemStackJS;
+import dev.latvian.mods.kubejs.item.ingredient.IngredientJS;
 import dev.latvian.mods.kubejs.typings.Info;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -11,66 +18,133 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.Map;
+import java.util.Set;
 
 public class OEVInitRecipeHandleEventJS<C extends Container, T extends Recipe<C>> extends EventJS {
-    public ServerRecipeHandler recipeHandler;
     public static List<IRecipeModify> modifiers = new ArrayList<>();
 
-    public OEVInitRecipeHandleEventJS(ServerRecipeHandler recipeHandler) {
-        this.recipeHandler = recipeHandler;
+    public OEVInitRecipeHandleEventJS() {
     }
+
+    public RecipeHandlerManager getRecipeHandlerManager() {
+        return RecipeHandlerManager.INSTANCE;
+    }
+
+    public IngredientManager getIngredientManager() {
+        return IngredientManager.INSTANCE;
+    }
+
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
+    //  配方处理器
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
 
     @Info("添加默认的配方处理方式，即输出物品价值等于输入物品价值总和")
-    public  void addSimpleRecipeHandler(RecipeType<T> recipeType) {
-        recipeHandler.registerSimpleRecipeHandler(recipeType);
+    public void addSimpleRecipeHandler(RecipeType<T> recipeType) {
+        RecipeHandlerManager.INSTANCE.registerRecipeHandler(recipeType, RecipeHandler.DEFAULT);
     }
 
-    @Info("添加自定义的配方处理方法，返回true表示当前配方处理完全")
-    public void addCustomRecipeHandler(RecipeType<T> recipeType, Predicate<T> handler) {
-        recipeHandler.registerRecipeHandler(recipeType, handler);
-    }
-
-    public  void modifyRecipeGenValue(IRecipeModify modifier) {
-        modifiers.add(modifier);
+    @Info("添加自定义的配方处理方法")
+    public void addCustomRecipeHandler(RecipeType<T> recipeType, RecipeInputWrapperGetter inputGetter, RecipeOutputWrapperGetter outputGetter, IRecipeExtraValueGetter extraValueGetter, IRecipeValueSetter valueSetter) {
+        RecipeHandlerManager.INSTANCE.registerRecipeHandler(recipeType, RecipeHandler.create(
+                inputGetter, outputGetter, extraValueGetter, valueSetter
+        ));
     }
 
     @Info("移除指定配方处理器")
     public void removeRecipeHandler(RecipeType<?> recipeType) {
-        recipeHandler.recipeHandlers.removeIf(recipeHandler1 -> recipeHandler1.type.equals(recipeType));
+        RecipeHandlerManager.INSTANCE.handlers.remove(recipeType);
     }
 
     @Info("获取全部配方处理器")
-    public List<ServerRecipeHandler.RecipeHandler<?, ?>> getRecipeHandlers() {
-        return recipeHandler.recipeHandlers;
+    public Map<RecipeType<?>, RecipeHandler> getRecipeHandlers() {
+        return RecipeHandlerManager.INSTANCE.handlers;
     }
 
-    public boolean defaultSetRecipeValue(Recipe<?> recipe, Number value) {
-        return ServerRecipeHandler.defSetValue.test(recipe, value);
+
+    @Info("对生成的配方值进行修改")
+    public void modifyRecipeGenValue(IRecipeModify modifier) {
+        modifiers.add(modifier);
     }
 
-    public int getMinIngredientValue(Ingredient ingredient) {
-        return ServerRecipeHandler.getMinIngredientValue(ingredient);
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
+    //  特殊原料处理
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
+
+    public void register(Class<? extends Ingredient> ingredientClass, ISpecialIngredientValueHandler specialHandler) {
+        IngredientManager.INSTANCE.specialIngredientValueHandlers.put(ingredientClass, specialHandler);
     }
 
-    public List<String> getAllRecipeTypeName(){
+    public ISpecialIngredientValueHandler getSpecialIngredientHandler(Class<? extends Ingredient> ingredientClass) {
+        return IngredientManager.INSTANCE.specialIngredientValueHandlers.get(ingredientClass);
+    }
+
+    public Set<Class<? extends Ingredient>> getHasHandlerIngredients() {
+        return IngredientManager.INSTANCE.specialIngredientValueHandlers.keySet();
+    }
+
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
+    //  一些默认值
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
+
+    public RecipeInputWrapperGetter getDefaultRecipeInputGetter() {
+        return IRecipeInputGetter.DEFAULT::get;
+    }
+
+    public RecipeOutputWrapperGetter getDefaultRecipeOutputGetter() {
+        return IRecipeOutputGetter.DEFAULT::get;
+    }
+
+    public IRecipeExtraValueGetter getDefaultRecipeExtraValueGetter() {
+        return IRecipeExtraValueGetter.DEFAULT;
+    }
+
+    public IRecipeValueSetter getDefaultRecipeValueSetter() {
+        return IRecipeValueSetter.DEFAULT;
+    }
+
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
+    //  配方处类型获取
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
+
+    public List<String> getAllRecipeTypeName() {
         return ForgeRegistries.RECIPE_TYPES.getKeys().stream().map(Object::toString).toList();
     }
 
-    public List<RecipeType<?>> getAllRecipeType(){
+    public List<RecipeType<?>> getAllRecipeType() {
         return ForgeRegistries.RECIPE_TYPES.getValues().stream().toList();
     }
 
-    public int getMaxInteger(){
-        return Integer.MAX_VALUE;
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
+    //  一些函数式接口
+    //= = = = = = = = = = = = = = = = = = = = = = = = =
+
+    @FunctionalInterface
+    public interface IRecipeModify {
+        int apply(String type, int oldValue);
     }
 
-    public ServerRecipeHandler getRecipeHandler() {
-        return recipeHandler;
+    /**
+     * kjs的包装<br>
+     * 因为kjs返回值会无视泛型，需要额外处理
+     */
+
+    @FunctionalInterface
+    public interface RecipeInputWrapperGetter extends IRecipeInputGetter {
+        List<Ingredient> kjs$get(Recipe<?> recipe);
+
+        default List<Ingredient> get(Recipe<?> recipe) {
+            return kjs$get(recipe).stream().map(IngredientJS::of).toList();
+        }
     }
 
     @FunctionalInterface
-    public interface IRecipeModify{
-        int apply(String type, int oldValue);
+    public interface RecipeOutputWrapperGetter extends IRecipeOutputGetter {
+        List<ItemStack> kjs$get(Recipe<?> recipe, RegistryAccess registryAccess);
+
+        default List<ItemStack> get(Recipe<?> recipe, RegistryAccess registryAccess) {
+            return kjs$get(recipe, registryAccess).stream().map(ItemStackJS::of).toList();
+        }
     }
+
 }
