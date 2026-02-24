@@ -1,5 +1,6 @@
 package com.sighs.oneenoughvalue.client;
 
+import com.sighs.oneenoughvalue.Config;
 import com.sighs.oneenoughvalue.OneEnoughValue;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
 import net.minecraft.network.chat.Component;
@@ -12,9 +13,10 @@ import net.minecraftforge.fml.common.Mod;
 public class ValueTooltipHandler {
     @SubscribeEvent
     public static void onValueTooltip(final ItemTooltipEvent event) {
+        if (!Config.ADD_VALUE_TOOLTIP.get()) return;
         if (!event.getFlags().isAdvanced()) return;
         int itemValue = ItemValueManager.instance.getValue(event.getItemStack());
         if (itemValue <= 0) return;
-        event.getToolTip().add(Component.translatable("tooltip.oev.value",itemValue));
+        event.getToolTip().add(Component.translatable("tooltip.oev.value", itemValue));
     }
 }

@@ -3,6 +3,7 @@ package com.sighs.oneenoughvalue.server;
 import com.sighs.oneenoughvalue.OneEnoughValue;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
 import com.sighs.oneenoughvalue.network.DataSyncPack;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TagsUpdatedEvent;
@@ -29,7 +30,7 @@ public class ServerHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        OneEnoughValue.NETWORK.send(PacketDistributor.PLAYER.with(() -> (net.minecraft.server.level.ServerPlayer) event.getEntity()), getDataSyncPack());
+        OneEnoughValue.NETWORK.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) event.getEntity()), getDataSyncPack());
     }
 
     public static DataSyncPack getDataSyncPack() {
