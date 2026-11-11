@@ -19,6 +19,7 @@ public class OEVPlugin extends KubeJSPlugin {
     @Override
     public void registerBindings(BindingsEvent event) {
         event.add("OEV$ItemValueManager", ItemValueManager.instance);
+        event.add("OEV$ExtraValueHelper", new ExtraValueHelper());
     }
 
     //todo:等待写pjs兼容

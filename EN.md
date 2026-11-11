@@ -16,8 +16,6 @@ Additionally, you can add or modify base values for items using the following me
 OEVEvents.addItemValue(event => {
     // Add base value.
     event.addBaseItemValue('minecraft:iron_nugget', 10);
-    // Add extra value by matching NBT, such as Tacz's firearms.
-    event.addExtraItemValue('{GunId:"tacz:m700"}', 500000);
 });
 ```
 
@@ -33,6 +31,40 @@ ItemEvents.rightClicked(event => {
     event.player.tell(OEV$ItemValueManager.getValue(event.item));
 });
 ```
+
+### Extra Value
+
+An extra value is `(id, function)` — the function takes an ItemStack and **returns the extra value**, where 0 means "does not match" — written in a **startup script** (`kubejs/startup_scripts/`):
+
+```javascript
+OEVEvents.addExtraItemValue(event => {
+    // Fixed value: apples are worth 500000 extra.
+    event.addExtraValue('apple', stack => stack.id === 'minecraft:apple' ? 500000 : 0);
+    // Dynamic: Tacz's firearms, by NBT.
+    event.addExtraValue('tacz_gun', stack => stack.nbt?.GunId === 'tacz:m700' ? 500000 : 0);
+    // Dynamic: price per item, 100 each diamond.
+    event.addExtraValue('diamond_stack', stack => stack.id === 'minecraft:diamond' ? stack.count * 100 : 0);
+    // Dynamic: 50 per Sharpness level.
+    event.addExtraValue('sharp', stack => (stack.getEnchantmentLevel('minecraft:sharpness') ?? 0) * 50);
+});
+```
+
+The function may return any expression, so values can be scaled by stack count, NBT contents, enchantment level and so on; returning 0 means no match.
+
+The id is what makes this manageable: registering the same id again overwrites, so re-running scripts (e.g. `/kubejs reload_startup_scripts`) never doubles a value. **Different** ids that both match one item have their values **added up**.
+
+To add or remove entries while the game is running, use the global `OEV$ExtraValueHelper`:
+
+```javascript
+// Note: runtime changes do not sync — see the @Info warning on these methods.
+OEV$ExtraValueHelper.add('apple', stack => stack.id === 'minecraft:apple' ? 500 : 0);
+OEV$ExtraValueHelper.remove('apple');
+OEV$ExtraValueHelper.getIds();
+```
+
+> These methods are marked **unstable**: the extra value table is not synced over the network, so a runtime change only affects the side that made it. In multiplayer you must keep both sides consistent yourself. For normal use, register in a startup script instead.
+
+Startup scripts run on both the client and the server, so extra values agree on both sides without any syncing. Extra values are sealed during `FMLCommonSetupEvent`, and can still be added dynamically afterwards.
 
 ### Processing Value
 

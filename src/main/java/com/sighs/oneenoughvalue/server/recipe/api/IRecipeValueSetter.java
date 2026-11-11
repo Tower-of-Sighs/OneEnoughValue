@@ -12,6 +12,9 @@ import java.util.List;
 @FunctionalInterface
 public interface IRecipeValueSetter {
     IRecipeValueSetter DEFAULT = (recipe, stacks, totalValue, setter) -> {
+        if (stacks.isEmpty()) {
+            return;
+        }
         setter.set(recipe, stacks.get(0), totalValue);
     };
 

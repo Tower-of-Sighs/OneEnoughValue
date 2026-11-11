@@ -11,8 +11,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class IngredientManager {
@@ -20,12 +24,18 @@ public class IngredientManager {
     public Multimap<Ingredient, Item> ingredient2Item = HashMultimap.create();
     public Multimap<Item, Ingredient> item2Ingredient = HashMultimap.create();
     public Map<Ingredient, Integer> ingredientMinValuesCache = new HashMap<>();
+    /**
+     * ingredient -> 以它为输入的节点（反查表）<br>
+     * 每次 parseAllRecipes 内由 {@link #init()} 重建，依赖 Ingredient 的引用相等（Ingredient 无 equals/hashCode）
+     */
+    public Map<Ingredient, List<RecipeNode>> ingredient2Nodes = new IdentityHashMap<>();
     public Map<Class<? extends Ingredient>, ISpecialIngredientValueHandler> specialIngredientValueHandlers = new HashMap<>();
 
     public void clearCache() {
         ingredient2Item.clear();
         item2Ingredient.clear();
         ingredientMinValuesCache.clear();
+        ingredient2Nodes.clear();
         specialIngredientValueHandlers.clear();
     }
 
@@ -34,6 +44,7 @@ public class IngredientManager {
      * 可以使用Item获取到被影响的Ingredient
      */
     public void init() {
+        ingredient2Nodes.clear();
         for (RecipeNode node : RecipeHandlerManager.INSTANCE.allNodes) {
             for (Ingredient ingredient : node.ingredients) {
                 if (!ingredient2Item.containsKey(ingredient)) {
@@ -41,6 +52,12 @@ public class IngredientManager {
                         ingredient2Item.put(ingredient, item);
                         item2Ingredient.put(item, ingredient);
                     });
+                }
+                //同一个节点在同一 ingredient 下只登记一次，等价于 hasIngredient 的单次命中
+                //（同一节点的登记是连续的，重复时当前节点必为表尾）
+                List<RecipeNode> dependents = ingredient2Nodes.computeIfAbsent(ingredient, key -> new ArrayList<>(2));
+                if (dependents.isEmpty() || dependents.get(dependents.size() - 1) != node) {
+                    dependents.add(node);
                 }
             }
         }
@@ -112,14 +129,16 @@ public class IngredientManager {
      */
     public void setItemStackValueChange(Item item) {
         for (Ingredient ingredient : item2Ingredient.get(item)) {
+            int cachedValue = getMinValueInCache(ingredient);
+            int currentValue = getMinValue(ingredient);
             //如果缓存的值大于新值,则重设缓存
-            if (getMinValueInCache(ingredient) == -1 || getMinValueInCache(ingredient) > getMinValue(ingredient)) {
-                ingredientMinValuesCache.put(ingredient, getMinValue(ingredient));
+            if (cachedValue == -1 || cachedValue > currentValue) {
+                ingredientMinValuesCache.put(ingredient, currentValue);
 
-                for (RecipeNode node : RecipeHandlerManager.INSTANCE.allNodes) {
-                    if (node.hasIngredient(ingredient) && node.isHandled) {
-                        RecipeHandlerManager.INSTANCE.nodes.offer(node);
+                for (RecipeNode node : ingredient2Nodes.getOrDefault(ingredient, Collections.emptyList())) {
+                    if (node.isHandled) {
                         node.isHandled = false;
+                        RecipeHandlerManager.INSTANCE.enqueue(node);
                     }
                 }
             }

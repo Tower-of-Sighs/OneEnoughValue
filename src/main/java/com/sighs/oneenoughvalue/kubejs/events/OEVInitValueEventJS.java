@@ -3,7 +3,6 @@ package com.sighs.oneenoughvalue.kubejs.events;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
 import dev.latvian.mods.kubejs.event.EventJS;
 import dev.latvian.mods.kubejs.typings.Info;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -26,11 +25,6 @@ public class OEVInitValueEventJS extends EventJS {
         for (ItemStack item : ingredient.getItems()) {
             valueManager.registerValue(item.getItem(), value);
         }
-    }
-
-    @Info("添加NBT额外价值")
-    public void addExtraItemValue(CompoundTag tag, int value) {
-        valueManager.registerExtraValue(tag, value);
     }
 
     @Info("获取物品基础价值(效果等同于使用:OEV$ItemValueManager.getBaseValue)")

@@ -36,7 +36,6 @@ public class ServerHandler {
     public static DataSyncPack getDataSyncPack() {
         DataSyncPack pack = new DataSyncPack();
         pack.baseValueMap = ItemValueManager.instance.baseValueMap;
-        pack.extraValueMap = ItemValueManager.instance.extraValueMap;
         return pack;
     }
 

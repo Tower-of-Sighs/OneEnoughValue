@@ -20,9 +20,9 @@ public class OneEnoughValue {
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final SimpleChannel NETWORK = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MODID,"main"),
-            ()->"1.0.0",
-            "1.0.0"::equals,
-            "1.0.0"::equals
+            ()->"1.1.0",
+            "1.1.0"::equals,
+            "1.1.0"::equals
     );
 
     public OneEnoughValue() {
