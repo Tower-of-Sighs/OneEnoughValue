@@ -1,0 +1,31 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "GNU GPL 3.0"
+
+[[mods]]
+modId = "oneenoughvalue"
+version = "1.1.0"
+displayName = "OneEnoughValue"
+authors = "Mafuyu404"
+description = "Mafuyu never like you."
+
+[[dependencies.oneenoughvalue]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.199,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.oneenoughvalue]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.22)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.oneenoughvalue]]
+modId = "kubejs"
+type = "required"
+versionRange = "[2101,)"
+ordering = "NONE"
+side = "BOTH"
