@@ -17,6 +17,17 @@ OEVEvents.addItemValue(event => {
     event.addBaseItemValue('minecraft:iron_nugget', 10);
 });
 ```
+默认价值来自数据包 `data/<命名空间>/oev/values/*.json`，格式是扁平的「物品 id 或标签 → 价值」映射，`#` 前缀表示标签：
+
+```json
+{
+  "minecraft:apple": 128,
+  "#minecraft:logs": 32
+}
+```
+
+整合包可以放自己的数据包来覆盖默认值：多个文件按数据包优先级依次读取，同一个 key 后读到的覆盖先读到的。没有删除语法，要清掉某条就覆盖成 0，或用下面的 KubeJS 方法。
+
 如果一个物品没有显示价值，那么它的价值就为0，上面的方法都是将价值+10。该方法支持负数。
 
 物品价值会向下取整，如0.5会向下取整为0。

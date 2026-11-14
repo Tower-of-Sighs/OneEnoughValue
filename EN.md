@@ -19,6 +19,17 @@ OEVEvents.addItemValue(event => {
 });
 ```
 
+Default values come from datapacks at `data/<namespace>/oev/values/*.json`, using a flat "item id or tag → value" mapping where a `#` prefix means a tag:
+
+```json
+{
+  "minecraft:apple": 128,
+  "#minecraft:logs": 32
+}
+```
+
+A modpack can ship its own datapack to override the defaults: files are read in datapack priority order and a later key overwrites an earlier one. There is no delete syntax — overwrite a key with 0, or use the KubeJS method below.
+
 If an item does not show a value, its value is 0. The methods above add a value of +10 (e.g., 0 becomes 10). These methods support negative numbers.
 
 Item values are rounded down (e.g., 0.5 becomes 0).
