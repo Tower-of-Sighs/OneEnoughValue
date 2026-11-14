@@ -99,16 +99,21 @@ tasks.register("checkPublishTokens") {
 
 publishMods {
     // 默认干跑，确认无误后临时改 false 真发
-    dryRun = true
+    dryRun = false
     file = tasks.named('reobfJar').flatMap { it.archiveFile }
-    changelog = providers.gradleProperty("changelog").getOrElse("见 GitHub Release 说明")
-    type = STABLE
+    changelog = providers.gradleProperty("changelog").getOrElse("""- 基础价值改为数据包驱动，可用 data/<namespace>/oev/values/*.json 覆盖默认值
+- 额外价值改用函数动态计算，支持按数量、NBT、附魔等级定价
+- 新增 Java 侧配方处理器注册 API（OEVRegisterRecipeHandlersEvent）
+- 删除调试类 RecipeValueDump、TraversalStats
+- 修复标签类基础价值在标签绑定前被丢弃的问题
+- 项目拆分为独立仓库，可单独构建""")
+    type = BETA
     modLoaders.add("forge")
     maxRetries = 3
 
     curseforge {
-        // TODO 填入 CurseForge 数字项目 ID（项目 slug 为 one-enough-value）
-        projectId = providers.gradleProperty("curseforge_project_id").getOrElse("TODO_PROJECT_ID")
+        // 项目 slug 为 one-enough-value；ID 也可用 ~/.gradle/gradle.properties 的 curseforge_project_id 覆盖
+        projectId = providers.gradleProperty("curseforge_project_id").getOrElse("1413802")
         projectSlug = "one-enough-value"
         accessToken = cfToken
         minecraftVersions.add("1.20.1")
