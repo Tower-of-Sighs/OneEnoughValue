@@ -63,16 +63,19 @@ tasks.register("checkPublishTokens") {
 
 publishMods {
     // 默认干跑，确认无误后临时改 false 真发
-    dryRun = true
+    dryRun = false
     file = tasks.named('jar').flatMap { it.archiveFile }
-    changelog = providers.gradleProperty("changelog").getOrElse("见 GitHub Release 说明")
-    type = STABLE
+    changelog = providers.gradleProperty("changelog").getOrElse("""- 移植至 1.21.1 NeoForge
+- 基础价值改为数据包驱动
+- 额外价值改用函数动态计算
+- 补上基础价值的客户端同步（DataSyncPayload）""")
+    type = BETA
     modLoaders.add("neoforge")
     maxRetries = 3
 
     curseforge {
-        // TODO 填入 CurseForge 数字项目 ID（项目 slug 为 one-enough-value）
-        projectId = providers.gradleProperty("curseforge_project_id").getOrElse("TODO_PROJECT_ID")
+        // 项目 slug 为 one-enough-value；ID 也可用 ~/.gradle/gradle.properties 的 curseforge_project_id 覆盖
+        projectId = providers.gradleProperty("curseforge_project_id").getOrElse("1413802")
         projectSlug = "one-enough-value"
         accessToken = cfToken
         minecraftVersions.add("1.21.1")
