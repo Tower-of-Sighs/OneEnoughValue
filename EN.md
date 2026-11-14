@@ -124,6 +124,34 @@ OEVEvents.addRecipeHandler(event => {
 });
 ```
 
+### Java API for Other Mods
+
+If your mod has its own recipe types, register a handler on the Java side by listening to `OEVRegisterRecipeHandlersEvent`:
+
+```java
+import com.sighs.oneenoughvalue.api.event.OEVRegisterRecipeHandlersEvent;
+import com.sighs.oneenoughvalue.server.recipe.api.RecipeHandler;
+
+@Mod.EventBusSubscriber(modid = "mymod")
+public class MyModHooks {
+    @SubscribeEvent
+    public static void onRegister(OEVRegisterRecipeHandlersEvent event) {
+        // The common single-output case
+        event.register(MyRecipeTypes.CUSTOM, RecipeHandler.simple(recipe -> 0));
+        // Or fully customise all four stages
+        event.register(MyRecipeTypes.OTHER, RecipeHandler.create(
+                IRecipeInputGetter.DEFAULT,
+                myOutputGetter,
+                myExtraValueGetter,
+                IRecipeValueSetter.DEFAULT));
+        // Just use the default summation rule
+        event.registerSimple(RecipeType.SMELTING);
+    }
+}
+```
+
+Attach the listener to `MinecraftForge.EVENT_BUS`. The event is **fired again on every value recomputation**, so `/reload` is supported automatically; do not register once during mod construction, because that registration is cleared on the next reload.
+
 ### Future Plans
 
 - Port to other versions.

@@ -23,6 +23,19 @@ public record RecipeHandler(IRecipeInputGetter inputGetter, IRecipeOutputGetter 
         return new RecipeHandler(IRecipeInputGetter.DEFAULT, outputGetter, IRecipeExtraValueGetter.DEFAULT, valueSetter);
     }
 
+    /**
+     * 单输出的最常见情形：给出输入、输出与额外价值，价值按输入之和落库。
+     * 其它模组的配方大多只需这一种，不必自己拼四个接口。
+     */
+    public static RecipeHandler simple(IRecipeInputGetter inputGetter, IRecipeOutputGetter outputGetter, IRecipeExtraValueGetter extraValueGetter) {
+        return new RecipeHandler(inputGetter, outputGetter, extraValueGetter, IRecipeValueSetter.DEFAULT);
+    }
+
+    /** 输入输出都用默认实现，只给额外价值（例如按烧炼时间加成）。 */
+    public static RecipeHandler simple(IRecipeExtraValueGetter extraValueGetter) {
+        return new RecipeHandler(IRecipeInputGetter.DEFAULT, IRecipeOutputGetter.DEFAULT, extraValueGetter, IRecipeValueSetter.DEFAULT);
+    }
+
     public List<Ingredient> getInputs(Recipe<?> recipe) {
         return inputGetter.get(recipe);
     }

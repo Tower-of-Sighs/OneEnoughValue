@@ -1,6 +1,7 @@
 package com.sighs.oneenoughvalue.server.recipe;
 
 import com.sighs.oneenoughvalue.OneEnoughValue;
+import com.sighs.oneenoughvalue.api.event.OEVRegisterRecipeHandlersEvent;
 import com.sighs.oneenoughvalue.kubejs.events.OEVEvents;
 import com.sighs.oneenoughvalue.kubejs.events.OEVInitRecipeHandleEventJS;
 import com.sighs.oneenoughvalue.server.ingredient.IngredientManager;
@@ -11,6 +12,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraftforge.common.MinecraftForge;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -103,6 +105,8 @@ public class RecipeHandlerManager {
         registerRecipeHandler(RecipeType.SMELTING, RecipeHandler.DEFAULT);
         registerRecipeHandler(RecipeType.BLASTING, RecipeHandler.DEFAULT);
         registerRecipeHandler(RecipeType.SMOKING, RecipeHandler.DEFAULT);
+        // Java 侧模组注册：每轮 reload 都会重新 post，注册因此不随 clearCache 丢失
+        MinecraftForge.EVENT_BUS.post(new OEVRegisterRecipeHandlersEvent(this));
         OEVEvents.ADD_RECIPE_HANDLER.post(new OEVInitRecipeHandleEventJS<>());
     }
 

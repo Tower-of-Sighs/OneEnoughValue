@@ -130,6 +130,34 @@ OEVEvents.addRecipeHandler(event => {
 });
 ```
 
+### 给其它模组用的 Java API
+
+如果你的模组有自己的配方类型，可以在 Java 侧监听 `OEVRegisterRecipeHandlersEvent` 注册处理器：
+
+```java
+import com.sighs.oneenoughvalue.api.event.OEVRegisterRecipeHandlersEvent;
+import com.sighs.oneenoughvalue.server.recipe.api.RecipeHandler;
+
+@Mod.EventBusSubscriber(modid = "mymod")
+public class MyModHooks {
+    @SubscribeEvent
+    public static void onRegister(OEVRegisterRecipeHandlersEvent event) {
+        // 单输出配方最常见的写法
+        event.register(MyRecipeTypes.CUSTOM, RecipeHandler.simple(recipe -> 0));
+        // 或者完整自定义四个环节
+        event.register(MyRecipeTypes.OTHER, RecipeHandler.create(
+                IRecipeInputGetter.DEFAULT,
+                myOutputGetter,
+                myExtraValueGetter,
+                IRecipeValueSetter.DEFAULT));
+        // 只是想按默认求和规则处理
+        event.registerSimple(RecipeType.SMELTING);
+    }
+}
+```
+
+监听器挂在 `MinecraftForge.EVENT_BUS` 上即可。**每轮价值重算都会重新触发该事件**，所以自动支持 `/reload`；不要改在模组构造期做一次性注册，那会在下一次 reload 被清掉。
+
 ### 后续计划
 
 - 移植到其它版本
