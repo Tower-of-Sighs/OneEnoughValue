@@ -1,9 +1,6 @@
 package com.sighs.oneenoughvalue.server.recipe;
 
-import com.sighs.oneenoughvalue.OneEnoughValue;
-import com.sighs.oneenoughvalue.api.event.OEVRegisterRecipeHandlersEvent;
-import com.sighs.oneenoughvalue.kubejs.events.OEVEvents;
-import com.sighs.oneenoughvalue.kubejs.events.OEVInitRecipeHandleEventJS;
+import com.sighs.oneenoughvalue.api.OEVLog;
 import com.sighs.oneenoughvalue.server.ingredient.IngredientManager;
 import com.sighs.oneenoughvalue.server.recipe.api.RecipeHandler;
 import com.sighs.oneenoughvalue.server.recipe.api.RecipeNode;
@@ -12,7 +9,6 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraftforge.common.MinecraftForge;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -74,7 +70,7 @@ public class RecipeHandlerManager {
             }
             pending.queued = false;
             if (++steps > stepBudget) {
-                OneEnoughValue.LOGGER.warn("配方价值推导达到步骤预算 {}({}),提前结束并保留已算出的价值;"
+                OEVLog.LOGGER.warn("配方价值推导达到步骤预算 {}({}),提前结束并保留已算出的价值;"
                         + "通常由非单调的 modifier/自定义 valueSetter/特殊 ingredient 处理器引起", stepBudget, steps);
                 break;
             }
@@ -105,9 +101,9 @@ public class RecipeHandlerManager {
         registerRecipeHandler(RecipeType.SMELTING, RecipeHandler.DEFAULT);
         registerRecipeHandler(RecipeType.BLASTING, RecipeHandler.DEFAULT);
         registerRecipeHandler(RecipeType.SMOKING, RecipeHandler.DEFAULT);
-        // Java 侧模组注册：每轮 reload 都会重新 post，注册因此不随 clearCache 丢失
-        MinecraftForge.EVENT_BUS.post(new OEVRegisterRecipeHandlersEvent(this));
-        OEVEvents.ADD_RECIPE_HANDLER.post(new OEVInitRecipeHandleEventJS<>());
+        // 平台层注册：每轮 reload 都会重新触发，注册因此不随 clearCache 丢失
+        com.sighs.oneenoughvalue.manager.ItemValueManager.platform.onRecipeHandlersRegister(this);
+        com.sighs.oneenoughvalue.manager.ItemValueManager.platform.onRecipeHandlerInit();
     }
 
     public void clearCache() {

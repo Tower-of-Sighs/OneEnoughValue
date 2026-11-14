@@ -2,7 +2,7 @@ package com.sighs.oneenoughvalue.server;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.sighs.oneenoughvalue.OneEnoughValue;
+import com.sighs.oneenoughvalue.api.OEVLog;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
@@ -43,7 +43,7 @@ public class BaseValueReloadListener extends SimplePreparableReloadListener<List
         entries.clear();
         // listPacks() 的顺序即数据包优先级，低优先级在前，保证后写覆盖
         resourceManager.listPacks().forEach(pack -> readPack(pack, entries));
-        OneEnoughValue.LOGGER.info("从数据包读取基础价值 {} 条", entries.size());
+        OEVLog.LOGGER.info("从数据包读取基础价值 {} 条", entries.size());
         return entries;
     }
 
@@ -71,7 +71,7 @@ public class BaseValueReloadListener extends SimplePreparableReloadListener<List
                      BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
                     readFile(location, reader, entries);
                 } catch (Exception e) {
-                    OneEnoughValue.LOGGER.error("读取基础价值数据包文件失败: {} (来自 {})",
+                    OEVLog.LOGGER.error("读取基础价值数据包文件失败: {} (来自 {})",
                             location, pack.packId(), e);
                 }
             });
@@ -84,7 +84,7 @@ public class BaseValueReloadListener extends SimplePreparableReloadListener<List
             try {
                 entries.add(new Entry(key, element.getAsInt()));
             } catch (RuntimeException e) {
-                OneEnoughValue.LOGGER.error("{} 中 {} 的数值不是整数: {}", location, key, element);
+                OEVLog.LOGGER.error("{} 中 {} 的数值不是整数: {}", location, key, element);
             }
         });
     }

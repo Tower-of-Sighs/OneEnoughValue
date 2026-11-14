@@ -6,24 +6,20 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraftforge.eventbus.api.Event;
 
 /**
- * 供其它模组在 Java 侧注册配方价值处理器的 Forge 事件。<br>
- * 每一轮价值重算都会在处理器表清空之后 post 一次，因此在事件里注册即自动支持 /reload；
- * 不需要（也不应该）在模组构造期做一次性注册——那样的结果会在下一次 reload 被清掉。
+ * 供其它模组在 Java 侧注册配方价值处理器的事件（1.20.1 Forge 版本）。<br>
+ * 每一轮价值重算都会在处理器表清空之后 post 一次，因此在事件里注册即自动支持 /reload。
  * <p>
- * 用法：
- * <pre>{@code
- * @SubscribeEvent
- * public static void onRegisterRecipeHandlers(OEVRegisterRecipeHandlersEvent event) {
- *     event.register(MyRecipeTypes.CUSTOM, RecipeHandler.simple(recipe -> 0));
- * }
- * }</pre>
- * 监听器挂在 {@code MinecraftForge.EVENT_BUS} 上。
+ * NeoForge 模块提供同名同签名的等价事件，二者互不依赖。
  */
 public class OEVRegisterRecipeHandlersEvent extends Event {
     private final RecipeHandlerManager manager;
 
     public OEVRegisterRecipeHandlersEvent(RecipeHandlerManager manager) {
         this.manager = manager;
+    }
+
+    public OEVRegisterRecipeHandlersEvent(Object manager) {
+        this((RecipeHandlerManager) manager);
     }
 
     /** 为某个配方类型注册处理器；同一类型重复注册会覆盖。 */

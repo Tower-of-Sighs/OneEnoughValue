@@ -1,5 +1,6 @@
 package com.sighs.oneenoughvalue.server.ingredient;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
@@ -9,7 +10,6 @@ import com.sighs.oneenoughvalue.server.recipe.api.RecipeNode;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,7 +87,7 @@ public class IngredientManager {
         for (Item item : ingredient2Item.get(ingredient)) {
             int buffer = ItemValueManager.instance.getBaseValue(item);
             if (buffer == -1) {
-                buffer = ItemValueManager.instance.recipesGenValue.getOrDefault(ForgeRegistries.ITEMS.getKey(item), Integer.MAX_VALUE);
+                buffer = ItemValueManager.instance.recipesGenValue.getOrDefault(BuiltInRegistries.ITEM.getKey(item), Integer.MAX_VALUE);
             }
             value = Math.min(value, buffer);
         }
@@ -110,7 +110,7 @@ public class IngredientManager {
     public boolean isStaticValue(Ingredient ingredient) {
         return Arrays.stream(ingredient.getItems())
                 .map(ItemStack::getItem)
-                .map(ForgeRegistries.ITEMS::getKey)
+                .map(BuiltInRegistries.ITEM::getKey)
                 .allMatch(ItemValueManager.instance.baseValueMap::containsKey);
     }
 

@@ -7,7 +7,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +49,7 @@ public class RecipeNode {
             int minBaseValue = Integer.MAX_VALUE;
             for (ItemStack stack : stacks) {
                 Item item = stack.getItem();
-                if (!ItemValueManager.instance.baseValueMap.containsKey(ForgeRegistries.ITEMS.getKey(item))) {
+                if (!ItemValueManager.instance.baseValueMap.containsKey(BuiltInRegistries.ITEM.getKey(item))) {
                     allHasBaseValue = false;
                 }
                 minBaseValue = Math.min(minBaseValue, ItemValueManager.instance.getBaseValue(item));

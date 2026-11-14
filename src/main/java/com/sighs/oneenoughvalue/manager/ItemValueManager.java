@@ -1,14 +1,9 @@
 package com.sighs.oneenoughvalue.manager;
 
-import com.sighs.oneenoughvalue.OneEnoughValue;
-import com.sighs.oneenoughvalue.kubejs.events.OEVEvents;
-import com.sighs.oneenoughvalue.kubejs.events.OEVInitExtraValueEventJS;
-import com.sighs.oneenoughvalue.kubejs.events.OEVInitRecipeHandleEventJS;
-import com.sighs.oneenoughvalue.kubejs.events.OEVInitValueEventJS;
+import com.sighs.oneenoughvalue.api.OEVLog;
+import com.sighs.oneenoughvalue.api.OEVPlatform;
 import com.sighs.oneenoughvalue.server.BaseValueReloadListener;
 import com.sighs.oneenoughvalue.server.recipe.RecipeHandlerManager;
-import dev.latvian.mods.kubejs.typings.Info;
-import dev.latvian.mods.rhino.util.HideFromJS;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -18,7 +13,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -29,6 +23,9 @@ import java.util.function.Function;
 
 public class ItemValueManager {
     public static ItemValueManager instance = new ItemValueManager();
+
+    /** 由 loader 模块注入的平台实现；未注入时为空壳，common 仍可独立工作。 */
+    public static OEVPlatform platform = OEVPlatform.NOOP;
     public Map<ResourceLocation, Integer> recipesGenValue = new HashMap<>();
     public Map<ResourceLocation, Integer> baseValueMap = new HashMap<>();
     public Map<String, ExtraValue> extraValueMap = new LinkedHashMap<>();
@@ -53,7 +50,7 @@ public class ItemValueManager {
                 return raw == null ? 0 : raw.intValue();
             } catch (ClassCastException e) {
                 if (warnedNonNumber.compareAndSet(false, true)) {
-                    OneEnoughValue.LOGGER.warn("额外价值 {} 的函数返回了非数字，已按 0 处理；"
+                    OEVLog.LOGGER.warn("额外价值 {} 的函数返回了非数字，已按 0 处理；"
                             + "该提示只出现一次", id);
                 }
                 return 0;
@@ -79,9 +76,9 @@ public class ItemValueManager {
      */
     public void onReload(RecipeManager recipeManager, RegistryAccess registryAccess) {
         applyDatapackValues();
-        OEVEvents.ADD_VALUE.post(new OEVInitValueEventJS(this));
+        platform.onValueInit();
 
-        OEVInitRecipeHandleEventJS.modifiers.clear();
+        platform.onRecipeHandlerInit();
         RecipeHandlerManager.INSTANCE.parseAllRecipes(recipeManager, registryAccess);
 
         Map<ResourceLocation, Integer> result = new HashMap<>();
@@ -111,11 +108,9 @@ public class ItemValueManager {
 
     //如果放入了新值则返回true,用于检测配方是否完全处理
     public boolean computeRecipeValue(String type, ItemStack stack, int value) {
-        ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        ResourceLocation key = BuiltInRegistries.ITEM.getKey(stack.getItem());
         value /= stack.getCount();
-        for (OEVInitRecipeHandleEventJS.IRecipeModify modifier : OEVInitRecipeHandleEventJS.modifiers) {
-            value = modifier.apply(type, value);
-        }
+        value = platform.modifyRecipeValue(type, value);
         Integer oldValue = recipesGenValue.get(key);
         if (oldValue == null) {
             recipesGenValue.put(key, value);
@@ -131,24 +126,16 @@ public class ItemValueManager {
         }
         return false;
     }
-
-    @Info("获取一个物品的价值（基础价值+额外价值）")
     public int getValue(ItemStack itemStack) {
         return getBaseValue(itemStack) + getExtraValue(itemStack);
     }
-
-    @HideFromJS//js别看这个，笨牛会找不到方法
     public int getBaseValue(ItemStack itemStack) {
         return getBaseValue(itemStack.getItem());
     }
-
-    @Info("获取一个物品的基础价值")
     public int getBaseValue(Item item) {
-        ResourceLocation key = ForgeRegistries.ITEMS.getKey(item);
+        ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
         return baseValueMap.getOrDefault(key, -1);
     }
-
-    @Info("获取一个物品的额外价值")
     public int getExtraValue(ItemStack itemStack) {
         int value = 0;
         for (ExtraValue entry : extraValueMap.values()) {
@@ -164,30 +151,26 @@ public class ItemValueManager {
     public void buildExtraValueTable() {
         if (extraValueSealed) return;
         extraValueSealed = true;
-        OneEnoughValue.LOGGER.info("已定型额外价值表，共 {} 条: {}", extraValueMap.size(), extraValueMap.keySet());
+        OEVLog.LOGGER.info("已定型额外价值表，共 {} 条: {}", extraValueMap.size(), extraValueMap.keySet());
     }
 
     public boolean isExtraValueSealed() {
         return extraValueSealed;
     }
-
-    @HideFromJS
     public void registerValue(ResourceLocation key, Integer value) {
-        if (ForgeRegistries.ITEMS.containsKey(key)) {
+        if (BuiltInRegistries.ITEM.containsKey(key)) {
             baseValueMap.put(key, value);
         }
     }
-
-    @HideFromJS
     public void registerValue(String key, Integer value) {
         ResourceLocation location = new ResourceLocation(key);
-        if (ForgeRegistries.ITEMS.containsKey(location)) {
+        if (BuiltInRegistries.ITEM.containsKey(location)) {
             baseValueMap.put(location, value);
         }
     }
 
     public void registerValue(Item item, Integer value) {
-        registerValue(ForgeRegistries.ITEMS.getKey(item), value);
+        registerValue(BuiltInRegistries.ITEM.getKey(item), value);
     }
 
     public void registerValue(TagKey<Item> tag, Integer value) {
@@ -195,27 +178,20 @@ public class ItemValueManager {
             registerValue(holder.get(), value);
         }
     }
-
-
-    @Info("添加额外价值，function 接收 ItemStack 并返回额外价值（0 表示不匹配）；相同的 id 会覆盖")
     public void registerExtraValue(String id, Function<ItemStack, Number> function) {
         if (id == null || id.isBlank()) {
-            OneEnoughValue.LOGGER.error("额外价值的 id 为空，已忽略");
+            OEVLog.LOGGER.error("额外价值的 id 为空，已忽略");
             return;
         }
         if (function == null) {
-            OneEnoughValue.LOGGER.error("额外价值 {} 的 function 为空，已忽略", id);
+            OEVLog.LOGGER.error("额外价值 {} 的 function 为空，已忽略", id);
             return;
         }
         extraValueMap.put(id, new ExtraValue(id, function));
     }
-
-    @Info("移除指定 id 的额外价值")
     public boolean removeExtraValue(String id) {
         return extraValueMap.remove(id) != null;
     }
-
-    @Info("获取全部额外价值的 id")
     public java.util.Set<String> getExtraValueIds() {
         return java.util.Set.copyOf(extraValueMap.keySet());
     }

@@ -1,6 +1,7 @@
 package com.sighs.oneenoughvalue;
 
 import com.mojang.logging.LogUtils;
+import com.sighs.oneenoughvalue.manager.ItemValueManager;
 import com.sighs.oneenoughvalue.network.DataSyncPack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -26,6 +27,9 @@ public class OneEnoughValue {
     );
 
     public OneEnoughValue() {
+        // 把 common 的平台钩子接到本加载器的实现上，否则 KubeJS 脚本注册不会生效
+        ItemValueManager.platform = new com.sighs.oneenoughvalue.forge.ForgePlatform();
+
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.register(this);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, Config.SPEC);

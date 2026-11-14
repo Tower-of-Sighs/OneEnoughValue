@@ -1,26 +1,19 @@
-# eclipse
-bin
-*.launch
-.settings
-.metadata
-.classpath
-.project
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
 
-# idea
-out
-*.ipr
-*.iws
+# IDE
+.idea/
 *.iml
-.idea
+.vscode/
+.eclipse/
 
-# gradle
-build
-.gradle
+# Minecraft run dirs
+run/
+runs/
+run-data/
 
-# other
-eclipse
-run
-runs
-run-data
-
-repo
+# OS
+.DS_Store
+Thumbs.db
