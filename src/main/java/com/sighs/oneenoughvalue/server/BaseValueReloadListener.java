@@ -3,13 +3,12 @@ package com.sighs.oneenoughvalue.server;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sighs.oneenoughvalue.OneEnoughValue;
-import com.sighs.oneenoughvalue.manager.ItemValueManager;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 import java.io.BufferedReader;
@@ -30,15 +29,35 @@ public class BaseValueReloadListener extends SimplePreparableReloadListener<List
     public static final String DIRECTORY = "oev/values";
     public static final String SUFFIX = ".json";
 
+    /** 单例：注册与读取共用同一个实例，标签就绪后由 ItemValueManager 取结果。 */
+    public static final BaseValueReloadListener INSTANCE = new BaseValueReloadListener();
+
     public record Entry(String key, int value) {
     }
 
+    /** 最近一次资源重载解析出的条目，供 TagsUpdatedEvent 阶段注册。 */
+    private volatile List<Entry> entries = new ObjectArrayList<>();
+
     @Override
     protected List<Entry> prepare(ResourceManager resourceManager, ProfilerFiller profiler) {
-        List<Entry> entries = new ArrayList<>();
+        entries.clear();
         // listPacks() 的顺序即数据包优先级，低优先级在前，保证后写覆盖
         resourceManager.listPacks().forEach(pack -> readPack(pack, entries));
         OneEnoughValue.LOGGER.info("从数据包读取基础价值 {} 条", entries.size());
+        return entries;
+    }
+
+    /**
+     * 只保存解析结果，不当场注册：apply 还在资源重载阶段，此时标签尚未绑定，
+     * 在这里展开 #标签 会拿到空集合，导致所有标签价值被静默丢弃。
+     * 真正的注册在 ItemValueManager.onReload（TagsUpdatedEvent）里做。
+     */
+    @Override
+    protected void apply(List<Entry> parsed, ResourceManager resourceManager, ProfilerFiller profiler) {
+        entries = parsed;
+    }
+
+    public List<Entry> getEntries() {
         return entries;
     }
 
@@ -68,18 +87,5 @@ public class BaseValueReloadListener extends SimplePreparableReloadListener<List
                 OneEnoughValue.LOGGER.error("{} 中 {} 的数值不是整数: {}", location, key, element);
             }
         });
-    }
-
-    @Override
-    protected void apply(List<Entry> entries, ResourceManager resourceManager, ProfilerFiller profiler) {
-        for (Entry entry : entries) {
-            String key = entry.key();
-            if (key.startsWith("#")) {
-                ItemValueManager.instance.registerValue(
-                        ItemTags.create(new ResourceLocation(key.substring(1))), entry.value());
-            } else {
-                ItemValueManager.instance.registerValue(key, entry.value());
-            }
-        }
     }
 }

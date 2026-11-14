@@ -5,6 +5,7 @@ import com.sighs.oneenoughvalue.kubejs.events.OEVEvents;
 import com.sighs.oneenoughvalue.kubejs.events.OEVInitExtraValueEventJS;
 import com.sighs.oneenoughvalue.kubejs.events.OEVInitRecipeHandleEventJS;
 import com.sighs.oneenoughvalue.kubejs.events.OEVInitValueEventJS;
+import com.sighs.oneenoughvalue.server.BaseValueReloadListener;
 import com.sighs.oneenoughvalue.server.recipe.RecipeHandlerManager;
 import dev.latvian.mods.kubejs.typings.Info;
 import dev.latvian.mods.rhino.util.HideFromJS;
@@ -12,6 +13,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -72,10 +74,11 @@ public class ItemValueManager {
     }
 
     /**
-     * 数据包来源的基础价值由 BaseValueReloadListener 独立注册，是整轮重建的起点，
-     * 因此 onReload 不再清空 baseValueMap，也不能重复调用 init() 把数据包结果抹掉。
+     * 基础价值来自数据包，但标签必须等到 TagsUpdatedEvent 才绑定完成，
+     * 所以数据包的解析结果在这里才真正注册（BaseValueReloadListener 只负责解析）。
      */
     public void onReload(RecipeManager recipeManager, RegistryAccess registryAccess) {
+        applyDatapackValues();
         OEVEvents.ADD_VALUE.post(new OEVInitValueEventJS(this));
 
         OEVInitRecipeHandleEventJS.modifiers.clear();
@@ -89,6 +92,21 @@ public class ItemValueManager {
         result.putAll(baseValueMap);
         baseValueMap = result;
         recipesGenValue.clear();
+    }
+
+    /**
+     * 注册数据包来源的基础价值。必须在 TagsUpdatedEvent 阶段调用：
+     * 资源重载时标签尚未绑定，#标签 会展开成空集合。
+     */
+    private void applyDatapackValues() {
+        for (BaseValueReloadListener.Entry entry : BaseValueReloadListener.INSTANCE.getEntries()) {
+            String key = entry.key();
+            if (key.startsWith("#")) {
+                registerValue(ItemTags.create(new ResourceLocation(key.substring(1))), entry.value());
+            } else {
+                registerValue(key, entry.value());
+            }
+        }
     }
 
     //如果放入了新值则返回true,用于检测配方是否完全处理

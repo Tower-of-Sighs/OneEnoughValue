@@ -42,7 +42,7 @@ public class ServerHandler {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onReload(AddReloadListenerEvent event) {
         RECIPE_MANAGER = event.getServerResources().getRecipeManager();
-        event.addListener(new BaseValueReloadListener());
+        event.addListener(BaseValueReloadListener.INSTANCE);
     }
 
 }
