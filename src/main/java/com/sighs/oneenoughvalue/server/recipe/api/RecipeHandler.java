@@ -36,8 +36,8 @@ public record RecipeHandler(IRecipeInputGetter inputGetter, IRecipeOutputGetter 
         return new RecipeHandler(IRecipeInputGetter.DEFAULT, IRecipeOutputGetter.DEFAULT, extraValueGetter, IRecipeValueSetter.DEFAULT);
     }
 
-    public List<Ingredient> getInputs(Recipe<?> recipe) {
-        return inputGetter.get(recipe);
+    public List<Ingredient> getInputs(Recipe<?> recipe, RegistryAccess registryAccess) {
+        return inputGetter.get(recipe, registryAccess);
     }
 
     public List<ItemStack> getOutputs(Recipe<?> recipe, RegistryAccess registryAccess) {

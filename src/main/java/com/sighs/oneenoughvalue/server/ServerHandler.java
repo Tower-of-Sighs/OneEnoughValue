@@ -2,47 +2,26 @@ package com.sighs.oneenoughvalue.server;
 
 import com.sighs.oneenoughvalue.OneEnoughValue;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
-import com.sighs.oneenoughvalue.network.DataSyncPack;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.TagsUpdatedEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
 
-@Mod.EventBusSubscriber(modid = OneEnoughValue.MODID)
+@EventBusSubscriber(modid = OneEnoughValue.MODID)
 public class ServerHandler {
     public static RecipeManager RECIPE_MANAGER;
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onTagUpdate(TagsUpdatedEvent event) {
-        if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.CLIENT_PACKET_RECEIVED) return;
-        ItemValueManager.instance.onReload(RECIPE_MANAGER, event.getRegistryAccess());
+    /** 26.x 起改用 ServerDataLoad 子类，根事件的 getUpdateCause() 已废弃。 */
+    @SubscribeEvent
+    public static void onTagUpdate(TagsUpdatedEvent.ServerDataLoad event) {
+        ItemValueManager.instance.onReload(RECIPE_MANAGER, event.getRegistries());
         RECIPE_MANAGER = null;
-        if(ServerLifecycleHooks.getCurrentServer()!=null) {
-            OneEnoughValue.NETWORK.send(PacketDistributor.ALL.noArg(),getDataSyncPack());
-        }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        OneEnoughValue.NETWORK.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) event.getEntity()), getDataSyncPack());
-    }
-
-    public static DataSyncPack getDataSyncPack() {
-        DataSyncPack pack = new DataSyncPack();
-        pack.baseValueMap = ItemValueManager.instance.baseValueMap;
-        return pack;
-    }
-
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onReload(AddReloadListenerEvent event) {
+    @SubscribeEvent
+    public static void onReload(AddServerReloadListenersEvent event) {
         RECIPE_MANAGER = event.getServerResources().getRecipeManager();
-        event.addListener(BaseValueReloadListener.INSTANCE);
+        event.addListener(OneEnoughValue.id("base_values"), BaseValueReloadListener.INSTANCE);
     }
-
 }

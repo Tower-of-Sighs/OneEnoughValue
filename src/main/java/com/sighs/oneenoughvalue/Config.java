@@ -1,12 +1,12 @@
 package com.sighs.oneenoughvalue;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class Config {
-    private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
-    public static final ForgeConfigSpec.ConfigValue<Boolean> ADD_VALUE_TOOLTIP;
+    private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
+    public static final ModConfigSpec.ConfigValue<Boolean> ADD_VALUE_TOOLTIP;
 
-    static final ForgeConfigSpec SPEC;
+    static final ModConfigSpec SPEC;
 
     static {
         ADD_VALUE_TOOLTIP = BUILDER

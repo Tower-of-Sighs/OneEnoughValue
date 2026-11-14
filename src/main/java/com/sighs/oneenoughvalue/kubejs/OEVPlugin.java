@@ -1,36 +1,22 @@
 package com.sighs.oneenoughvalue.kubejs;
 
-import com.sighs.oneenoughvalue.kubejs.events.OEVEvents;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
-import dev.latvian.mods.kubejs.KubeJSPlugin;
-import dev.latvian.mods.kubejs.script.BindingsEvent;
-import dev.latvian.mods.kubejs.script.ScriptType;
-import dev.latvian.mods.rhino.util.wrap.TypeWrappers;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraftforge.registries.ForgeRegistries;
+import dev.latvian.mods.kubejs.event.EventGroupRegistry;
+import dev.latvian.mods.kubejs.plugin.KubeJSPlugin;
+import dev.latvian.mods.kubejs.script.BindingRegistry;
 
-public class OEVPlugin extends KubeJSPlugin {
+/**
+ * 1.21.1 的 KubeJS 插件：注册事件组与全局绑定。
+ */
+public class OEVPlugin implements KubeJSPlugin {
     @Override
-    public void registerEvents() {
-        OEVEvents.GROUP.register();
+    public void registerEvents(EventGroupRegistry registry) {
+        registry.register(OEVEvents.GROUP);
     }
 
     @Override
-    public void registerBindings(BindingsEvent event) {
-        event.add("OEV$ItemValueManager", ItemValueManager.instance);
-        event.add("OEV$ExtraValueHelper", new ExtraValueHelper());
+    public void registerBindings(BindingRegistry registry) {
+        registry.add("OEV$ItemValueManager", ItemValueManager.instance);
+        registry.add("OEV$ExtraValueHelper", new ExtraValueHelper());
     }
-
-    //todo:等待写pjs兼容
-    @Override
-    public void registerTypeWrappers(ScriptType type, TypeWrappers typeWrappers) {
-        typeWrappers.registerSimple(RecipeType.class, o -> {
-            if(o instanceof RecipeType){
-                return (RecipeType) o;
-            }
-            return ForgeRegistries.RECIPE_TYPES.getValue(new ResourceLocation(o.toString()));
-        });
-    }
-
 }

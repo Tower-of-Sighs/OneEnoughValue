@@ -1,22 +1,20 @@
 package com.sighs.oneenoughvalue.server.recipe;
 
-import com.sighs.oneenoughvalue.OneEnoughValue;
-import com.sighs.oneenoughvalue.api.event.OEVRegisterRecipeHandlersEvent;
-import com.sighs.oneenoughvalue.kubejs.events.OEVEvents;
-import com.sighs.oneenoughvalue.kubejs.events.OEVInitRecipeHandleEventJS;
+import com.sighs.oneenoughvalue.api.OEVLog;
 import com.sighs.oneenoughvalue.server.ingredient.IngredientManager;
 import com.sighs.oneenoughvalue.server.recipe.api.RecipeHandler;
 import com.sighs.oneenoughvalue.server.recipe.api.RecipeNode;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraftforge.common.MinecraftForge;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
@@ -38,13 +36,13 @@ public class RecipeHandlerManager {
      * 如果生成的物品价值影响了其他的配方<br>
      * 则将其他配方再次加入队列
      */
-    @SuppressWarnings("unchecked")
-    public <C extends Container, T extends Recipe<C>> void parseAllRecipes(RecipeManager manager, RegistryAccess registryAccess) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void parseAllRecipes(RecipeManager manager, RegistryAccess registryAccess) {
         currentRegistryAccess = registryAccess;
         init();
         for (Map.Entry<RecipeType<?>, RecipeHandler> entry : handlers.entrySet()) {
-            for (Recipe<?> recipe : manager.getAllRecipesFor((RecipeType<T>) entry.getKey())) {
-                var node = new RecipeNode(entry.getValue(), recipe);
+            for (RecipeHolder<?> holder : recipesOf(manager, entry.getKey())) {
+                var node = new RecipeNode(entry.getValue(), holder.value());
                 if (node.resultItems.isEmpty()) {
                     continue;
                 }
@@ -74,13 +72,25 @@ public class RecipeHandlerManager {
             }
             pending.queued = false;
             if (++steps > stepBudget) {
-                OneEnoughValue.LOGGER.warn("配方价值推导达到步骤预算 {}({}),提前结束并保留已算出的价值;"
+                OEVLog.LOGGER.warn("配方价值推导达到步骤预算 {}({}),提前结束并保留已算出的价值;"
                         + "通常由非单调的 modifier/自定义 valueSetter/特殊 ingredient 处理器引起", stepBudget, steps);
                 break;
             }
             pending.tryHandle();
         }
         clearCache();
+    }
+
+    /** 26.x 的 RecipeManager 只提供 getRecipes()，按类型过滤在本方法内完成。 */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static List<RecipeHolder<?>> recipesOf(RecipeManager manager, RecipeType<?> type) {
+        List<RecipeHolder<?>> out = new java.util.ArrayList<>();
+        for (RecipeHolder<?> holder : manager.getRecipes()) {
+            if (holder.value().getType() == type) {
+                out.add(holder);
+            }
+        }
+        return out;
     }
 
     /**
@@ -105,9 +115,9 @@ public class RecipeHandlerManager {
         registerRecipeHandler(RecipeType.SMELTING, RecipeHandler.DEFAULT);
         registerRecipeHandler(RecipeType.BLASTING, RecipeHandler.DEFAULT);
         registerRecipeHandler(RecipeType.SMOKING, RecipeHandler.DEFAULT);
-        // Java 侧模组注册：每轮 reload 都会重新 post，注册因此不随 clearCache 丢失
-        MinecraftForge.EVENT_BUS.post(new OEVRegisterRecipeHandlersEvent(this));
-        OEVEvents.ADD_RECIPE_HANDLER.post(new OEVInitRecipeHandleEventJS<>());
+        // 平台层注册：每轮 reload 都会重新触发，注册因此不随 clearCache 丢失
+        com.sighs.oneenoughvalue.manager.ItemValueManager.platform.onRecipeHandlersRegister(this);
+        com.sighs.oneenoughvalue.manager.ItemValueManager.platform.onRecipeHandlerInit();
     }
 
     public void clearCache() {

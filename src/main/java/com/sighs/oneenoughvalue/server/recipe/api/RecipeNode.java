@@ -7,7 +7,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +40,8 @@ public class RecipeNode {
             return;
         }
         staticValue = this.handler.getExtraValue(recipe);
-        for (Ingredient ingredient : this.handler.getInputs(recipe)) {
-            ItemStack[] stacks = ingredient.getItems();
+        for (Ingredient ingredient : this.handler.getInputs(recipe, RecipeHandlerManager.INSTANCE.currentRegistryAccess)) {
+            ItemStack[] stacks = ingredient.getValues().stream().map(net.minecraft.core.Holder::value).map(net.minecraft.world.item.ItemStack::new).toArray(net.minecraft.world.item.ItemStack[]::new);
             if (ingredient.isEmpty() || stacks.length == 0) {
                 continue;
             }
@@ -49,7 +49,7 @@ public class RecipeNode {
             int minBaseValue = Integer.MAX_VALUE;
             for (ItemStack stack : stacks) {
                 Item item = stack.getItem();
-                if (!ItemValueManager.instance.baseValueMap.containsKey(ForgeRegistries.ITEMS.getKey(item))) {
+                if (!ItemValueManager.instance.baseValueMap.containsKey(BuiltInRegistries.ITEM.getKey(item))) {
                     allHasBaseValue = false;
                 }
                 minBaseValue = Math.min(minBaseValue, ItemValueManager.instance.getBaseValue(item));

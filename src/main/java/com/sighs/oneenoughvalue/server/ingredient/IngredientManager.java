@@ -1,5 +1,6 @@
 package com.sighs.oneenoughvalue.server.ingredient;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
@@ -9,7 +10,6 @@ import com.sighs.oneenoughvalue.server.recipe.api.RecipeNode;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,7 +48,7 @@ public class IngredientManager {
         for (RecipeNode node : RecipeHandlerManager.INSTANCE.allNodes) {
             for (Ingredient ingredient : node.ingredients) {
                 if (!ingredient2Item.containsKey(ingredient)) {
-                    Arrays.stream(ingredient.getItems()).map(ItemStack::getItem).forEach(item -> {
+                    Arrays.stream(ingredient.getValues().stream().map(net.minecraft.core.Holder::value).map(net.minecraft.world.item.ItemStack::new).toArray(net.minecraft.world.item.ItemStack[]::new)).map(ItemStack::getItem).forEach(item -> {
                         ingredient2Item.put(ingredient, item);
                         item2Ingredient.put(item, ingredient);
                     });
@@ -87,7 +87,7 @@ public class IngredientManager {
         for (Item item : ingredient2Item.get(ingredient)) {
             int buffer = ItemValueManager.instance.getBaseValue(item);
             if (buffer == -1) {
-                buffer = ItemValueManager.instance.recipesGenValue.getOrDefault(ForgeRegistries.ITEMS.getKey(item), Integer.MAX_VALUE);
+                buffer = ItemValueManager.instance.recipesGenValue.getOrDefault(BuiltInRegistries.ITEM.getKey(item), Integer.MAX_VALUE);
             }
             value = Math.min(value, buffer);
         }
@@ -100,7 +100,7 @@ public class IngredientManager {
      * 即生成配方是否跳过此物品
      */
     public boolean isEmpty(Ingredient ingredient) {
-        return ingredient.isEmpty() || ingredient.getItems().length == 0;
+        return ingredient.isEmpty() || ingredient.getValues().stream().map(net.minecraft.core.Holder::value).map(net.minecraft.world.item.ItemStack::new).toArray(net.minecraft.world.item.ItemStack[]::new).length == 0;
     }
 
     /**
@@ -108,15 +108,15 @@ public class IngredientManager {
      * 即不会因为配方生成而改变价值的Ingredient
      */
     public boolean isStaticValue(Ingredient ingredient) {
-        return Arrays.stream(ingredient.getItems())
+        return Arrays.stream(ingredient.getValues().stream().map(net.minecraft.core.Holder::value).map(net.minecraft.world.item.ItemStack::new).toArray(net.minecraft.world.item.ItemStack[]::new))
                 .map(ItemStack::getItem)
-                .map(ForgeRegistries.ITEMS::getKey)
+                .map(BuiltInRegistries.ITEM::getKey)
                 .allMatch(ItemValueManager.instance.baseValueMap::containsKey);
     }
 
     public int getStaticValue(Ingredient ingredient) {
         int value = Integer.MAX_VALUE;
-        for (ItemStack item : ingredient.getItems()) {
+        for (ItemStack item : ingredient.getValues().stream().map(net.minecraft.core.Holder::value).map(net.minecraft.world.item.ItemStack::new).toArray(net.minecraft.world.item.ItemStack[]::new)) {
             value = Math.min(value, ItemValueManager.instance.getBaseValue(item));
         }
         return value;

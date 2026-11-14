@@ -4,12 +4,12 @@ import com.sighs.oneenoughvalue.Config;
 import com.sighs.oneenoughvalue.OneEnoughValue;
 import com.sighs.oneenoughvalue.manager.ItemValueManager;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
-@Mod.EventBusSubscriber(modid = OneEnoughValue.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = OneEnoughValue.MODID, value = Dist.CLIENT)
 public class ValueTooltipHandler {
     @SubscribeEvent
     public static void onValueTooltip(final ItemTooltipEvent event) {
