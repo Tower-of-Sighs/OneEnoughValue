@@ -2,6 +2,7 @@ plugins {
     id 'idea'
     id 'java-library'
     id 'maven-publish'
+    id 'me.modmuss50.mod-publish-plugin' version '2.2.1'
     id 'net.neoforged.moddev' version '2.0.144'
 }
 
@@ -47,4 +48,37 @@ dependencies {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.compilerArgs.add '-parameters'
+}
+
+// ---- CurseForge 发布 ----
+// token 从 ~/.gradle/gradle.properties 的 curseforge_api_key 读取，CI 走 CURSEFORGE_API_KEY 环境变量
+def cfToken = providers.gradleProperty("curseforge_api_key")
+        .orElse(providers.environmentVariable("CURSEFORGE_API_KEY"))
+
+tasks.register("checkPublishTokens") {
+    doLast {
+        println("curseforge=" + cfToken.map { v -> "***" + v.substring(Math.max(0, v.length() - 4)) }.getOrElse("<missing>"))
+    }
+}
+
+publishMods {
+    // 默认干跑，确认无误后临时改 false 真发
+    dryRun = true
+    file = tasks.named('jar').flatMap { it.archiveFile }
+    changelog = providers.gradleProperty("changelog").getOrElse("见 GitHub Release 说明")
+    type = STABLE
+    modLoaders.add("neoforge")
+    maxRetries = 3
+
+    curseforge {
+        // TODO 填入 CurseForge 数字项目 ID（项目 slug 为 one-enough-value）
+        projectId = providers.gradleProperty("curseforge_project_id").getOrElse("TODO_PROJECT_ID")
+        projectSlug = "one-enough-value"
+        accessToken = cfToken
+        minecraftVersions.add("26.1.2")
+        client = true
+        server = true
+        javaVersions.add(JavaVersion.VERSION_25)
+        changelogType = "markdown"
+    }
 }
